@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador Aleatorio de Películas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            color: #212529;
+            text-align: center;
+            padding-top: 50px;
+        }
+
+        .movie-card {
+            max-width: 300px;
+            margin: 0 auto;
+            margin-bottom: 20px;
+            padding: 10px;
+            margin-top: 5px;
+        }
+
+        .movie-card img {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Generador de Películas</h1>
+        <form id="movie-form">
+            <div class="mb-3">
+                <label for="title" class="form-label">Título de la Película</label>
+                <input type="text" class="form-control" id="title" name="title" required>
+            </div>
+            <div class="mb-3">
+                <label for="image" class="form-label">Imagen de la Película</label>
+                <input type="file" class="form-control" id="image" name="image" accept="image/*" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Subir Película</button>
+        </form>
+        <div id="movie-list" class="row"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const movieForm = document.getElementById('movie-form');
+            const movieList = document.getElementById('movie-list');
+
+            movieForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                const title = document.getElementById('title').value;
+                const image = document.getElementById('image').files[0];
+
+                if (!title || !image) {
+                    alert('Por favor, complete todos los campos.');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function() {
+                    const imgElement = document.createElement('img');
+                    imgElement.src = reader.result;
+                    imgElement.alt = title;
+
+                    const movieCard = document.createElement('div');
+                    movieCard.classList.add('movie-card', 'col-md-4');
+                    movieCard.innerHTML = `
+                        <div class="card">
+                            <img src="${reader.result}" class="card-img-top" alt="${title}">
+                            <div class="card-body">
+                                <h5 class="card-title">${title}</h5>
+                                <button class="btn btn-primary edit-btn">Editar</button>
+                                <button class="btn btn-danger delete-btn">Eliminar</button>
+                            </div>
+                        </div>
+                    `;
+
+                    movieList.appendChild(movieCard);
+
+                    saveMovie(title, reader.result);
+                };
+                reader.readAsDataURL(image);
+
+                movieForm.reset();
+            });
+
+            function saveMovie(title, image) {
+                let movies = JSON.parse(localStorage.getItem('movies')) || [];
+                movies.push({ title, image });
+                localStorage.setItem('movies', JSON.stringify(movies));
+            }
+
+            function loadMovies() {
+                const movies = JSON.parse(localStorage.getItem('movies')) || [];
+                movies.forEach(movie => {
+                    const movieCard = document.createElement('div');
+                    movieCard.classList.add('movie-card', 'col-md-4');
+                    movieCard.innerHTML = `
+                        <div class="card">
+                            <img src="${movie.image}" class="card-img-top" alt="${movie.title}">
+                            <div class="card-body">
+                                <h5 class="card-title">${movie.title}</h5>
+                                <button class="btn btn-primary edit-btn">Editar</button>
+                                <button class="btn btn-danger delete-btn">Eliminar</button>
+                            </div>
+                        </div>
+                    `;
+                    movieList.appendChild(movieCard);
+                });
+            }
+
+            loadMovies();
+
+            movieList.addEventListener('click', function(event) {
+                const target = event.target;
+
+                if (target.classList.contains('edit-btn')) {
+                    const card = target.closest('.card');
+                    const titleElement = card.querySelector('.card-title');
+                    const editBtn = target;
+
+                    const currentTitle = titleElement.textContent;
+                    const newTitle = prompt('Editar título:', currentTitle);
+
+                    if (newTitle && newTitle !== currentTitle) {
+                        titleElement.textContent = newTitle;
+                        editBtn.textContent = 'Editar';
+                        saveMovies();
+                    }
+                }
+
+                if (target.classList.contains('delete-btn')) {
+                    const card = target.closest('.movie-card');
+                    card.remove();
+                    saveMovies();
+                }
+            });
+
+            function saveMovies() {
+                const movies = Array.from(document.querySelectorAll('.movie-card')).map(card => {
+                    return {
+                        title: card.querySelector('.card-title').textContent,
+                        image: card.querySelector('.card-img-top').src
+                    };
+                });
+                localStorage.setItem('movies', JSON.stringify(movies));
+            }
+        });
+    </script>
+</body>
+
+</html>
